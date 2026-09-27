@@ -1,0 +1,74 @@
+[
+  {
+    "id": "rm-001",
+    "name": "Aura Mini Projector",
+    "category": "Home & Tech",
+    "price": 45.00,
+    "compareAt": 79.00,
+    "spec": { "resolution": "1080p support", "throw": "40–120in", "connect": "HDMI/USB/WiFi" },
+    "image": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800",
+    "description": "Turns any blank wall into movie night. Small enough to travel, bright enough not to need the lights off.",
+    "cjSku": "CJ-PROJ-001",
+    "stock": 40
+  },
+  {
+    "id": "rm-002",
+    "name": "Glow Ambient LED Strip",
+    "category": "Home & Tech",
+    "price": 18.00,
+    "compareAt": 29.00,
+    "spec": { "length": "5m", "control": "App + remote", "modes": "16M colors" },
+    "image": "https://images.unsplash.com/photo-1558002038-1055907df827?w=800",
+    "description": "The strip behind every desk setup you've screenshotted. Syncs to music, sticks to anything.",
+    "cjSku": "CJ-LED-002",
+    "stock": 85
+  },
+  {
+    "id": "rm-003",
+    "name": "Flux Portable Blender",
+    "category": "Kitchen",
+    "price": 24.00,
+    "compareAt": 38.00,
+    "spec": { "capacity": "400ml", "charge": "USB-C", "blades": "6-blade steel" },
+    "image": "https://images.unsplash.com/photo-1570831739435-6601aa3fa4fb?w=800",
+    "description": "Blends a smoothie in the time it takes to find your keys. Rinses clean in one motion.",
+    "cjSku": "CJ-BLEND-003",
+    "stock": 52
+  },
+  {
+    "id": "rm-004",
+    "name": "Posture Pro Corrector",
+    "category": "Wellness",
+    "price": 21.00,
+    "compareAt": 34.00,
+    "spec": { "size": "Adjustable S–XL", "material": "Breathable mesh", "wear": "Under or over clothes" },
+    "image": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    "description": "The quiet nudge that fixes a slouch before your back reminds you to.",
+    "cjSku": "CJ-POST-004",
+    "stock": 60
+  },
+  {
+    "id": "rm-005",
+    "name": "Clip-On Phone Lens Trio",
+    "category": "Tech Accessories",
+    "price": 16.00,
+    "compareAt": 27.00,
+    "spec": { "lenses": "Wide, macro, fisheye", "mount": "Universal clip", "case": "Included" },
+    "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800",
+    "description": "Three lenses, one clip, zero learning curve. Your phone camera's actual upgrade.",
+    "cjSku": "CJ-LENS-005",
+    "stock": 70
+  },
+  {
+    "id": "rm-006",
+    "name": "Loop Magnetic Charge Cable",
+    "category": "Tech Accessories",
+    "price": 13.00,
+    "compareAt": 22.00,
+    "spec": { "length": "1.2m", "tips": "USB-C, Lightning, Micro", "current": "3A fast charge" },
+    "image": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=800",
+    "description": "One cable, three tips, no more tangled drawer of the wrong ones.",
+    "cjSku": "CJ-CABLE-006",
+    "stock": 95
+  }
+]

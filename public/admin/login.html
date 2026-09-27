@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roman — Admin login</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="wrap" style="max-width:380px; padding-top:100px;">
+  <div class="panel">
+    <h1 style="font-size:24px; margin-bottom:20px;">Admin login</h1>
+    <form id="login-form">
+      <div class="field" style="margin-bottom:16px;">
+        <label>Password</label>
+        <input type="password" name="password" required autofocus>
+      </div>
+      <button class="btn" type="submit" style="width:100%;">Log in</button>
+      <p id="login-error" style="color:#BB4D2E; font-size:13px; margin-top:12px; display:none;"></p>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const password = new FormData(e.target).get("password");
+  const res = await fetch("/admin/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  const data = await res.json();
+  if (data.ok) {
+    window.location.href = "/admin/index.html";
+  } else {
+    const err = document.getElementById("login-error");
+    err.textContent = data.error || "Login failed";
+    err.style.display = "block";
+  }
+});
+</script>
+</body>
+</html>

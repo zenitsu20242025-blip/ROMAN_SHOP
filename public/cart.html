@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roman — Cart</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">Roman</a>
+    <nav class="nav-links">
+      <a href="/#catalog">Catalog</a>
+      <a href="/#about">Shipping</a>
+    </nav>
+    <a href="/cart.html" class="cart-pill">Cart <span id="cart-count">0</span></a>
+  </div>
+</header>
+
+<div class="wrap" style="padding: 48px 0 72px;">
+  <h1 style="font-size:30px; margin-bottom:24px;">Your cart</h1>
+  <div class="panel" id="cart-panel"><!-- filled by JS --></div>
+</div>
+
+<footer>
+  <div class="wrap">Roman. Orders ship from our fulfillment partner within 1–2 business days; delivery typically 7–12 days.</div>
+</footer>
+
+<script src="/js/main.js"></script>
+<script>
+  renderCartPage();
+  updateCartCount();
+</script>
+</body>
+</html>

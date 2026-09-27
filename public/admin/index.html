@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roman — Admin</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .admin-table { width:100%; border-collapse: collapse; margin-bottom: 32px; }
+  .admin-table th, .admin-table td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; }
+  .admin-table th { color:#6B6F6B; font-weight:500; }
+  .tab-bar { display:flex; gap:8px; margin-bottom:24px; }
+  .tab-bar button { padding:8px 16px; border:1px solid var(--line); background:var(--paper); border-radius:var(--radius); cursor:pointer; font-family:'Work Sans',sans-serif; }
+  .tab-bar button.active { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .row-actions button { font-size:12px; padding:5px 10px; margin-right:6px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">Roman <span style="font-size:12px; color:#6B6F6B;">admin</span></a>
+    <button class="btn secondary" id="logout-btn" style="padding:8px 16px;">Log out</button>
+  </div>
+</header>
+
+<div class="wrap" style="padding: 40px 0 80px;" id="app">Loading…</div>
+
+<script>
+async function checkSession() {
+  const res = await fetch("/admin/api/session");
+  const data = await res.json();
+  if (!data.isAdmin) window.location.href = "/admin/login.html";
+}
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  await fetch("/admin/api/logout", { method: "POST" });
+  window.location.href = "/admin/login.html";
+});
+
+let currentTab = "products";
+
+async function render() {
+  await checkSession();
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <div class="tab-bar">
+      <button id="tab-products" class="${currentTab === 'products' ? 'active' : ''}">Products</button>
+      <button id="tab-orders" class="${currentTab === 'orders' ? 'active' : ''}">Orders</button>
+      <a href="/admin/api/export" class="btn secondary" style="margin-left:auto; padding:8px 16px;">Export products.json</a>
+    </div>
+    <div id="tab-content"></div>
+  `;
+  document.getElementById("tab-products").onclick = () => { currentTab = "products"; render(); };
+  document.getElementById("tab-orders").onclick = () => { currentTab = "orders"; render(); };
+
+  if (currentTab === "products") await renderProducts();
+  else await renderOrders();
+}
+
+async function renderProducts() {
+  const products = await (await fetch("/admin/api/products")).json();
+  const content = document.getElementById("tab-content");
+  content.innerHTML = `
+    <div class="panel" style="margin-bottom:28px;">
+      <h3 style="margin-bottom:16px;">Add product</h3>
+      <form id="add-form">
+        <div class="form-grid">
+          <div class="field"><label>ID (unique, no spaces)</label><input name="id" required></div>
+          <div class="field"><label>Name</label><input name="name" required></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Category</label><input name="category"></div>
+          <div class="field"><label>Price (USD)</label><input name="price" type="number" step="0.01" required></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Compare-at price</label><input name="compareAt" type="number" step="0.01"></div>
+          <div class="field"><label>CJ SKU</label><input name="cjSku"></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Image URL</label><input name="image"></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Description</label><input name="description"></div>
+        </div>
+        <button class="btn" type="submit">Add product</button>
+        <p id="add-error" style="color:#BB4D2E; font-size:13px; margin-top:10px; display:none;"></p>
+      </form>
+    </div>
+    <table class="admin-table">
+      <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>CJ SKU</th><th></th></tr></thead>
+      <tbody>
+        ${products.map((p) => `
+          <tr>
+            <td>${p.name}</td>
+            <td>${p.category || "—"}</td>
+            <td>$${Number(p.price).toFixed(2)}</td>
+            <td>${p.stock ?? "—"}</td>
+            <td>${p.cjSku || "—"}</td>
+            <td class="row-actions">
+              <button class="btn secondary" onclick="deleteProduct('${p.id}')">Delete</button>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <p style="font-size:13px; color:#6B6F6B;">
+      Changes here persist until the next Render restart/redeploy. Click
+      "Export products.json" and commit the file to GitHub to make edits
+      permanent, or migrate to Supabase for automatic persistence.
+    </p>
+  `;
+
+  document.getElementById("add-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target).entries());
+    data.price = parseFloat(data.price);
+    if (data.compareAt) data.compareAt = parseFloat(data.compareAt);
+    const res = await fetch("/admin/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (result.ok) render();
+    else {
+      const err = document.getElementById("add-error");
+      err.textContent = result.error;
+      err.style.display = "block";
+    }
+  });
+}
+
+async function deleteProduct(id) {
+  if (!confirm("Delete this product?")) return;
+  await fetch("/admin/api/products/" + id, { method: "DELETE" });
+  render();
+}
+
+async function renderOrders() {
+  const orders = await (await fetch("/admin/api/orders")).json();
+  const content = document.getElementById("tab-content");
+  if (!orders.length) {
+    content.innerHTML = `<p style="color:#6B6F6B;">No orders yet.</p>`;
+    return;
+  }
+  content.innerHTML = `
+    <table class="admin-table">
+      <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        ${orders.slice().reverse().map((o) => `
+          <tr>
+            <td>${o.id}</td>
+            <td>${o.customer?.name || "—"}<br><span style="color:#6B6F6B; font-size:12px;">${o.customer?.email || ""}</span></td>
+            <td>$${o.total.toFixed(2)}</td>
+            <td>${o.status}</td>
+            <td>${new Date(o.createdAt).toLocaleString()}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>

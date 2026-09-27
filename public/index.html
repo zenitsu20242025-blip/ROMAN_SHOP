@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roman — Today's most-wanted finds</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">Roman</a>
+    <nav class="nav-links">
+      <a href="/#catalog">Catalog</a>
+      <a href="/#about">Shipping</a>
+    </nav>
+    <a href="/cart.html" class="cart-pill">Cart <span id="cart-count">0</span></a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap" style="display:contents">
+    <div class="hero-copy">
+      <span class="kicker">Picked, not just posted</span>
+      <h1>Today's most-wanted finds</h1>
+      <p>A small, changing lineup of things people are actually buying right now — chosen for use, not just for how they look on camera. Ships direct to your door in 7–12 days.</p>
+      <a href="#catalog" class="btn">Shop the catalog</a>
+    </div>
+    <div class="hero-image">
+      <img src="https://images.unsplash.com/photo-1558002038-1055907df827?w=900" alt="Ambient LED lighting setup">
+      <div class="hero-tag">In stock — ships in 7–12 days</div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="catalog-header" id="catalog">
+    <h2>The catalog</h2>
+    <span class="count" id="product-count"></span>
+  </div>
+  <div class="grid" id="product-grid"></div>
+</div>
+
+<footer>
+  <div class="wrap">
+    Roman. Orders ship from our fulfillment partner within 1–2 business days; delivery typically 7–12 days.
+  </div>
+</footer>
+
+<script src="/js/main.js"></script>
+<script>
+  loadProductGrid();
+  updateCartCount();
+</script>
+</body>
+</html>

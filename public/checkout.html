@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roman — Checkout</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">Roman</a>
+    <nav class="nav-links">
+      <a href="/#catalog">Catalog</a>
+      <a href="/#about">Shipping</a>
+    </nav>
+    <a href="/cart.html" class="cart-pill">Cart <span id="cart-count">0</span></a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="checkout-layout">
+    <div>
+      <h1 style="font-size:28px; margin-bottom:24px;">Delivery details</h1>
+      <form id="checkout-form">
+        <div class="form-grid">
+          <div class="field"><label>First name</label><input name="firstName" required></div>
+          <div class="field"><label>Last name</label><input name="lastName" required></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Email</label><input type="email" name="email" required></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Street address</label><input name="street" required></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>City</label><input name="city" required></div>
+          <div class="field"><label>Postal code</label><input name="zip" required></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Country</label><input name="country" required></div>
+          <div class="field"><label>Phone</label><input name="phone"></div>
+        </div>
+        <button class="btn" type="submit" style="width:100%;">Continue to payment</button>
+        <p style="font-size:13px; color:#6B6F6B; margin-top:12px;">
+          Payment is handled by our gateway on the next step. No card details are stored on this site.
+        </p>
+      </form>
+    </div>
+    <div>
+      <div class="panel" id="checkout-summary"><!-- filled by JS --></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">Roman. Orders ship from our fulfillment partner within 1–2 business days; delivery typically 7–12 days.</div>
+</footer>
+
+<script src="/js/main.js"></script>
+<script>
+  renderCheckoutSummary();
+  updateCartCount();
+  handleCheckoutSubmit();
+</script>
+</body>
+</html>
