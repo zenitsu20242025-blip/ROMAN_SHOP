@@ -8,16 +8,7 @@
 </head>
 <body>
 
-<header class="site-header">
-  <div class="wrap">
-    <a href="/" class="brand">Roman</a>
-    <nav class="nav-links">
-      <a href="/#catalog">Catalog</a>
-      <a href="/#about">Shipping</a>
-    </nav>
-    <a href="/cart.html" class="cart-pill">Cart <span id="cart-count">0</span></a>
-  </div>
-</header>
+<div id="site-header"></div>
 
 <section class="hero">
   <div class="wrap" style="display:contents">
@@ -35,11 +26,20 @@
 </section>
 
 <div class="wrap">
+  <div class="trust-bar">
+    <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><div><strong>Secure checkout</strong><span>Encrypted payment</span></div></div>
+    <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="1" y="7" width="15" height="13" rx="1"/><path d="M16 11h3l4 4v5h-7"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg><div><strong>Free worldwide shipping</strong><span>7–12 day delivery</span></div></div>
+    <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><div><strong>14-day returns</strong><span>No questions asked</span></div></div>
+    <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><strong>Real support</strong><span>We reply within 1–2 days</span></div></div>
+  </div>
+</div>
+
+<div class="wrap">
   <div class="catalog-header" id="catalog">
-    <h2>The catalog</h2>
+    <h2>Shop by category</h2>
     <span class="count" id="product-count"></span>
   </div>
-  <div class="grid" id="product-grid"></div>
+  <div id="product-grid"></div>
 </div>
 
 <footer>
@@ -50,8 +50,7 @@
 
 <script src="/js/main.js"></script>
 <script>
-  loadProductGrid();
-  updateCartCount();
+  loadProductGrid().then((applyFilter) => { window._applyCatalogFilter = applyFilter; });
 </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 {
   "name": "roman-store",
   "version": "1.0.0",
-  "description": "Roman — headless dropshipping storefront (CJ Dropshipping + Verifone/2Checkout)",
+  "description": "Roman \u2014 headless dropshipping storefront (CJ Dropshipping + Verifone/2Checkout)",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -14,7 +14,6 @@
   "dependencies": {
     "express": "^4.19.2",
     "dotenv": "^16.4.5",
-    "cors": "^2.8.5",
     "express-session": "^1.18.0",
     "@supabase/supabase-js": "^2.45.4"
   }

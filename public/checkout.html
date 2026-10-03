@@ -8,16 +8,7 @@
 </head>
 <body>
 
-<header class="site-header">
-  <div class="wrap">
-    <a href="/" class="brand">Roman</a>
-    <nav class="nav-links">
-      <a href="/#catalog">Catalog</a>
-      <a href="/#about">Shipping</a>
-    </nav>
-    <a href="/cart.html" class="cart-pill">Cart <span id="cart-count">0</span></a>
-  </div>
-</header>
+<div id="site-header"></div>
 
 <div class="wrap">
   <div class="checkout-layout">
@@ -25,26 +16,33 @@
       <h1 style="font-size:28px; margin-bottom:24px;">Delivery details</h1>
       <form id="checkout-form">
         <div class="form-grid">
-          <div class="field"><label>First name</label><input name="firstName" required></div>
-          <div class="field"><label>Last name</label><input name="lastName" required></div>
-        </div>
-        <div class="form-grid full">
-          <div class="field"><label>Email</label><input type="email" name="email" required></div>
-        </div>
-        <div class="form-grid full">
-          <div class="field"><label>Street address</label><input name="street" required></div>
+          <div class="field"><label>First name</label><input name="firstName" required maxlength="25"></div>
+          <div class="field"><label>Last name</label><input name="lastName" required maxlength="25"></div>
         </div>
         <div class="form-grid">
-          <div class="field"><label>City</label><input name="city" required></div>
-          <div class="field"><label>Postal code</label><input name="zip" required></div>
+          <div class="field"><label>Email</label><input type="email" name="email" required maxlength="50"></div>
+          <div class="field"><label>Phone (for the courier)</label><input name="phone" required maxlength="20"></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Street address</label><input name="street" required maxlength="200"></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Apartment, suite, etc. (optional)</label><input name="street2" maxlength="200"></div>
         </div>
         <div class="form-grid">
-          <div class="field"><label>Country</label><input name="country" required></div>
-          <div class="field"><label>Phone</label><input name="phone"></div>
+          <div class="field"><label>City</label><input name="city" required maxlength="50"></div>
+          <div class="field"><label>State / Province / Region</label><input name="state" required maxlength="50"></div>
         </div>
-        <button class="btn" type="submit" style="width:100%;">Continue to payment</button>
+        <div class="form-grid">
+          <div class="field"><label>Postal code</label><input name="zip" required maxlength="20"></div>
+          <div class="field"><label>Country</label>
+            <select name="country" id="country-select" required style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--canvas);font-size:15px;"><option value="">Loading…</option></select>
+          </div>
+        </div>
+        <p id="checkout-error" style="color:#BB4D2E;font-size:14px;margin:0 0 12px;display:none;"></p>
+        <button class="btn" id="pay-btn" type="submit" style="width:100%;">Place order</button>
         <p style="font-size:13px; color:#6B6F6B; margin-top:12px;">
-          Payment is handled by our gateway on the next step. No card details are stored on this site.
+          Free shipping. Card details are handled by our payment provider and never stored on this site.
         </p>
       </form>
     </div>
@@ -61,7 +59,6 @@
 <script src="/js/main.js"></script>
 <script>
   renderCheckoutSummary();
-  updateCartCount();
   handleCheckoutSubmit();
 </script>
 </body>

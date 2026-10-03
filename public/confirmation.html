@@ -8,15 +8,7 @@
 </head>
 <body>
 
-<header class="site-header">
-  <div class="wrap">
-    <a href="/" class="brand">Roman</a>
-    <nav class="nav-links">
-      <a href="/#catalog">Catalog</a>
-    </nav>
-    <a href="/cart.html" class="cart-pill">Cart <span id="cart-count">0</span></a>
-  </div>
-</header>
+<div id="site-header"></div>
 
 <div class="wrap" style="padding: 64px 0;">
   <div class="panel" style="max-width: 560px; margin: 0 auto; text-align:center;" id="confirmation">
@@ -26,20 +18,35 @@
 
 <script src="/js/main.js"></script>
 <script>
+  localStorage.removeItem("tk_cart");
   updateCartCount();
+  const LABELS = {
+    pending_payment: ["Waiting for payment", "We have your order and are waiting for the payment to be confirmed. This page updates when you refresh it."],
+    paid: ["Payment received", "Your order is being prepared for shipping."],
+    sent_to_cj: ["Being prepared", "Your order was passed to our warehouse and will ship within 1–3 business days."],
+    cj_error: ["Being prepared", "Your payment is confirmed. We are finalising your shipment and will email you if we need anything."],
+    shipped: ["Shipped", "Your order is on its way."],
+    delivered: ["Delivered", "Your order has been delivered. We hope you enjoy it!"],
+    payment_error: ["Payment not completed", "The payment did not go through. Please try again from your cart."],
+    cj_cancelled: ["Cancelled", "This order was cancelled. Please contact us for help."]
+  };
   (async function () {
     const id = qs("order");
     const el = document.getElementById("confirmation");
     if (!id) { el.textContent = "No order reference found."; return; }
-    const res = await fetch("/api/orders/" + id);
+    const res = await fetch("/api/orders/" + encodeURIComponent(id));
     if (!res.ok) { el.textContent = "We couldn't find that order."; return; }
-    const order = await res.json();
+    const o = await res.json();
+    const [title, text] = LABELS[o.status] || ["Order received", ""];
+    const track = o.trackingNumber
+      ? `<p style="margin:16px 0;">Tracking number: <strong>${esc(o.trackingNumber)}</strong>${o.trackingUrl ? ` · <a style="text-decoration:underline" href="${esc(o.trackingUrl)}" target="_blank" rel="noopener">Track parcel</a>` : ""}</p>` : "";
     el.innerHTML = `
-      <h1 style="font-size:26px; margin-bottom:12px;">Order received</h1>
-      <p style="color:#6B6F6B;">Reference <strong>${order.id}</strong></p>
-      <p style="margin:20px 0;">We've sent a confirmation to ${order.customer.email}. Your gear ships from our fulfillment partner within 1–2 business days.</p>
-      <a href="/" class="btn">Back to catalog</a>
-    `;
+      <h1 style="font-size:26px; margin-bottom:12px;">${esc(title)}</h1>
+      <p style="color:#6B6F6B;">Reference <strong>${esc(o.id)}</strong><br>Save this reference to check your order later.</p>
+      <p style="margin:20px 0;">${esc(text)}</p>
+      ${track}
+      <p style="font-size:14px;color:#6B6F6B;">${o.items.map((i) => esc(i.name) + " × " + i.qty).join("<br>")}<br>Total ${money(o.total)}</p>
+      <a href="/" class="btn" style="margin-top:12px;">Back to catalog</a>`;
   })();
 </script>
 </body>

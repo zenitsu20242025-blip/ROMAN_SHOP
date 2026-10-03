@@ -6,160 +6,267 @@
 <title>Roman — Admin</title>
 <link rel="stylesheet" href="/css/style.css">
 <style>
-  .admin-table { width:100%; border-collapse: collapse; margin-bottom: 32px; }
-  .admin-table th, .admin-table td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; }
+  .admin-table { width:100%; border-collapse: collapse; margin-bottom: 24px; }
+  .admin-table th, .admin-table td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; vertical-align:top; }
   .admin-table th { color:#6B6F6B; font-weight:500; }
-  .tab-bar { display:flex; gap:8px; margin-bottom:24px; }
+  .tab-bar { display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
   .tab-bar button { padding:8px 16px; border:1px solid var(--line); background:var(--paper); border-radius:var(--radius); cursor:pointer; font-family:'Work Sans',sans-serif; }
   .tab-bar button.active { background:var(--ink); color:var(--paper); border-color:var(--ink); }
-  .row-actions button { font-size:12px; padding:5px 10px; margin-right:6px; }
+  .sm { font-size:12px !important; padding:5px 10px !important; margin:0 6px 6px 0; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:var(--canvas-raised); }
+  .badge.ok { background:#D8E6D9; } .badge.warn { background:#F3DDB8; } .badge.bad { background:#F0CFC6; }
+  .muted { color:#6B6F6B; font-size:13px; }
+  .cj-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin:16px 0; }
+  .cj-card { background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:10px; display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .cj-card img { width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:var(--radius); }
+  .inline-input { padding:9px 10px; border:1px solid var(--line); border-radius:var(--radius); background:var(--canvas); font-size:14px; font-family:'Work Sans',sans-serif; }
+  pre.detail { background:var(--paper); border:1px solid var(--line); padding:12px; font-size:12px; overflow:auto; max-width:100%; white-space:pre-wrap; }
 </style>
 </head>
 <body>
-
 <header class="site-header">
   <div class="wrap">
     <a href="/" class="brand">Roman <span style="font-size:12px; color:#6B6F6B;">admin</span></a>
     <button class="btn secondary" id="logout-btn" style="padding:8px 16px;">Log out</button>
   </div>
 </header>
-
 <div class="wrap" style="padding: 40px 0 80px;" id="app">Loading…</div>
 
 <script>
-async function checkSession() {
-  const res = await fetch("/admin/api/session");
-  const data = await res.json();
-  if (!data.isAdmin) window.location.href = "/admin/login.html";
-}
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const money = (n) => (n == null || n === "" ? "—" : "$" + Number(n).toFixed(2));
+const api = async (url, opts) => {
+  const res = await fetch(url, opts);
+  if (res.status === 401) { location.href = "/admin/login.html"; throw new Error("Not logged in"); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+};
+const post = (url, body) => api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
 
-document.getElementById("logout-btn").addEventListener("click", async () => {
-  await fetch("/admin/api/logout", { method: "POST" });
-  window.location.href = "/admin/login.html";
-});
+document.getElementById("logout-btn").onclick = async () => { await fetch("/admin/api/logout", { method: "POST" }); location.href = "/admin/login.html"; };
 
-let currentTab = "products";
+let tab = "products";
+const tabs = [["products","Products"],["import","Import from CJ"],["orders","Orders"],["setup","Setup"]];
 
 async function render() {
-  await checkSession();
   const app = document.getElementById("app");
-  app.innerHTML = `
-    <div class="tab-bar">
-      <button id="tab-products" class="${currentTab === 'products' ? 'active' : ''}">Products</button>
-      <button id="tab-orders" class="${currentTab === 'orders' ? 'active' : ''}">Orders</button>
-      <a href="/admin/api/export" class="btn secondary" style="margin-left:auto; padding:8px 16px;">Export products.json</a>
-    </div>
-    <div id="tab-content"></div>
-  `;
-  document.getElementById("tab-products").onclick = () => { currentTab = "products"; render(); };
-  document.getElementById("tab-orders").onclick = () => { currentTab = "orders"; render(); };
-
-  if (currentTab === "products") await renderProducts();
-  else await renderOrders();
+  app.innerHTML = `<div class="tab-bar">${tabs.map(([k,l]) => `<button data-tab="${k}" class="${tab===k?'active':''}">${l}</button>`).join("")}</div><div id="tab-content">Loading…</div>`;
+  app.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { tab = b.dataset.tab; render(); });
+  try {
+    if (tab === "products") await renderProducts();
+    else if (tab === "import") renderImport();
+    else if (tab === "orders") await renderOrders();
+    else await renderSetup();
+  } catch (e) { document.getElementById("tab-content").innerHTML = `<p style="color:#BB4D2E">${esc(e.message)}</p>`; }
 }
+const content = () => document.getElementById("tab-content");
 
+// ---------------- Products ----------------
 async function renderProducts() {
-  const products = await (await fetch("/admin/api/products")).json();
-  const content = document.getElementById("tab-content");
-  content.innerHTML = `
-    <div class="panel" style="margin-bottom:28px;">
-      <h3 style="margin-bottom:16px;">Add product</h3>
-      <form id="add-form">
-        <div class="form-grid">
-          <div class="field"><label>ID (unique, no spaces)</label><input name="id" required></div>
-          <div class="field"><label>Name</label><input name="name" required></div>
-        </div>
-        <div class="form-grid">
-          <div class="field"><label>Category</label><input name="category"></div>
-          <div class="field"><label>Price (USD)</label><input name="price" type="number" step="0.01" required></div>
-        </div>
-        <div class="form-grid">
-          <div class="field"><label>Compare-at price</label><input name="compareAt" type="number" step="0.01"></div>
-          <div class="field"><label>CJ SKU</label><input name="cjSku"></div>
-        </div>
-        <div class="form-grid full">
-          <div class="field"><label>Image URL</label><input name="image"></div>
-        </div>
-        <div class="form-grid full">
-          <div class="field"><label>Description</label><input name="description"></div>
-        </div>
-        <button class="btn" type="submit">Add product</button>
-        <p id="add-error" style="color:#BB4D2E; font-size:13px; margin-top:10px; display:none;"></p>
-      </form>
-    </div>
+  const products = await api("/admin/api/products");
+  content().innerHTML = `
+    ${products.some((p) => !p.cjVid) ? `<p class="badge warn" style="padding:8px 12px">Products marked “not linked” have no CJ variant, so their orders cannot be sent to CJ. Use “Import from CJ”, then delete the demo items.</p>` : ""}
     <table class="admin-table">
-      <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>CJ SKU</th><th></th></tr></thead>
-      <tbody>
-        ${products.map((p) => `
-          <tr>
-            <td>${p.name}</td>
-            <td>${p.category || "—"}</td>
-            <td>$${Number(p.price).toFixed(2)}</td>
-            <td>${p.stock ?? "—"}</td>
-            <td>${p.cjSku || "—"}</td>
-            <td class="row-actions">
-              <button class="btn secondary" onclick="deleteProduct('${p.id}')">Delete</button>
-            </td>
-          </tr>
-        `).join("")}
+      <thead><tr><th></th><th>Name</th><th>Price</th><th>CJ cost</th><th>Margin*</th><th>CJ</th><th></th></tr></thead>
+      <tbody>${products.map((p) => `
+        <tr>
+          <td>${p.image ? `<img src="${esc(p.image)}" width="44" height="44" style="object-fit:cover;border-radius:3px">` : ""}</td>
+          <td>${esc(p.name)}<div class="muted">${esc(p.category || "")} · ${esc(p.id)}</div></td>
+          <td>${money(p.price)}</td>
+          <td>${money(p.cost)}</td>
+          <td>${p.cost != null ? money(p.price - p.cost) : "—"}</td>
+          <td>${p.cjVid ? '<span class="badge ok">linked</span>' : '<span class="badge bad">not linked</span>'}</td>
+          <td><button class="btn secondary sm" data-price="${esc(p.id)}" data-cur="${p.price}">Price</button><button class="btn secondary sm" data-cat="${esc(p.id)}" data-cur="${esc(p.category || "")}">Category</button><button class="btn secondary sm" data-del="${esc(p.id)}">Delete</button></td>
+        </tr>`).join("") || `<tr><td colspan="7" class="muted">No products yet.</td></tr>`}
       </tbody>
     </table>
-    <p style="font-size:13px; color:#6B6F6B;">
-      Changes here persist until the next Render restart/redeploy. Click
-      "Export products.json" and commit the file to GitHub to make edits
-      permanent, or migrate to Supabase for automatic persistence.
-    </p>
-  `;
-
-  document.getElementById("add-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target).entries());
-    data.price = parseFloat(data.price);
-    if (data.compareAt) data.compareAt = parseFloat(data.compareAt);
-    const res = await fetch("/admin/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    const result = await res.json();
-    if (result.ok) render();
-    else {
-      const err = document.getElementById("add-error");
-      err.textContent = result.error;
-      err.style.display = "block";
-    }
+    <p class="muted">*Margin before CJ shipping cost. Free shipping is included in your price, so leave room for it.</p>
+    <a href="/admin/api/export" class="btn secondary sm">Export products.json (backup)</a>`;
+  content().querySelectorAll("[data-price]").forEach((b) => b.onclick = async () => {
+    const v = prompt("New price (USD)", b.dataset.cur);
+    if (v == null || !(Number(v) > 0)) return;
+    await api("/admin/api/products/" + encodeURIComponent(b.dataset.price), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ price: Number(v) }) });
+    render();
+  });
+  content().querySelectorAll("[data-cat]").forEach((b) => b.onclick = async () => {
+    const cats = [...new Set(products.map((x) => x.category).filter(Boolean))].sort();
+    const hint = cats.length ? `\n\nExisting categories: ${cats.join(", ")}` : "";
+    const v = prompt("Category" + hint, b.dataset.cur);
+    if (v == null || !v.trim()) return;
+    await api("/admin/api/products/" + encodeURIComponent(b.dataset.cat), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: v.trim() }) });
+    render();
+  });
+  content().querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
+    if (!confirm("Delete this product?")) return;
+    await api("/admin/api/products/" + encodeURIComponent(b.dataset.del), { method: "DELETE" });
+    render();
   });
 }
 
-async function deleteProduct(id) {
-  if (!confirm("Delete this product?")) return;
-  await fetch("/admin/api/products/" + id, { method: "DELETE" });
-  render();
+// ---------------- Import from CJ ----------------
+function renderImport() {
+  content().innerHTML = `
+    <div class="panel">
+      <h3 style="margin-bottom:12px">Search the CJ catalog</h3>
+      <form id="cj-form" style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="inline-input" name="q" placeholder="e.g. led strip, posture, projector" style="flex:1;min-width:200px" required>
+        <select class="inline-input" name="country"><option value="">Any warehouse</option><option value="US">In stock in US</option><option value="CN">In stock in China</option></select>
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <p class="muted" style="margin-top:8px">Tip: “In stock in US” products ship faster to American customers.</p>
+    </div>
+    <div id="cj-results"></div><div id="cj-detail"></div>`;
+  document.getElementById("cj-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const box = document.getElementById("cj-results");
+    box.innerHTML = `<p class="muted">Searching…</p>`;
+    try {
+      const items = await api(`/admin/api/cj/search?q=${encodeURIComponent(f.get("q"))}&country=${encodeURIComponent(f.get("country"))}`);
+      box.innerHTML = items.length ? `<div class="cj-grid">${items.map((p) => `
+        <div class="cj-card"><img src="${esc(p.image)}" loading="lazy">
+          <div>${esc(p.name)}</div>
+          <div><strong>$${esc(p.price)}</strong> ${p.freeShipping ? '<span class="badge ok">free ship</span>' : ""}</div>
+          <div class="muted">stock ${esc(p.stock ?? "?")} · ${esc(p.delivery || "?")} days</div>
+          <button class="btn secondary sm" data-pid="${esc(p.pid)}">Select</button></div>`).join("")}</div>` : `<p class="muted">No results.</p>`;
+      box.querySelectorAll("[data-pid]").forEach((b) => b.onclick = () => showCjProduct(b.dataset.pid));
+    } catch (err) { box.innerHTML = `<p style="color:#BB4D2E">${esc(err.message)}</p>`; }
+  };
 }
 
+async function showCjProduct(pid) {
+  const box = document.getElementById("cj-detail");
+  box.innerHTML = `<p class="muted">Loading product…</p>`;
+  box.scrollIntoView({ behavior: "smooth" });
+  try {
+    const [p, existingProducts] = await Promise.all([
+      api("/admin/api/cj/product/" + encodeURIComponent(pid)),
+      api("/admin/api/products"),
+    ]);
+    if (!p.variants.length) { box.innerHTML = `<p style="color:#BB4D2E">This product has no variants.</p>`; return; }
+    const suggest = (cost) => (Math.ceil(cost * 2.5) - 0.01).toFixed(2);
+    const existingCats = [...new Set(existingProducts.map((x) => x.category).filter(Boolean))].sort();
+    const guessedCat = String(p.category || "").split(/[\/>]/).pop().trim();
+    box.innerHTML = `
+      <div class="panel" style="margin-top:16px">
+        <h3 style="margin-bottom:12px">Import product</h3>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">${p.images.slice(0,5).map((u) => `<img src="${esc(u)}" width="90" height="90" style="object-fit:cover;border-radius:3px">`).join("")}</div>
+        <form id="imp-form">
+          <div class="form-grid full"><div class="field"><label>Variant (color / size)</label>
+            <select class="inline-input" name="vid" style="width:100%">${p.variants.map((v) => `<option value="${esc(v.vid)}" data-cost="${v.price}">${esc(v.key || v.name || v.sku)} — CJ $${v.price.toFixed(2)}</option>`).join("")}</select></div></div>
+          <div class="form-grid full"><div class="field"><label>Store name (CJ titles are long — shorten it)</label><input name="name" value="${esc(p.name)}" required></div></div>
+          <div class="form-grid">
+            <div class="field"><label>Your price (USD, free shipping included)</label><input name="price" type="number" step="0.01" required></div>
+            <div class="field"><label>Crossed-out price (optional)</label><input name="compareAt" type="number" step="0.01"></div>
+          </div>
+          <div class="form-grid full"><div class="field"><label>Category (keep categories consistent — pick an existing one when it fits)</label>
+            <select class="inline-input" id="cat-select" style="width:100%">
+              ${existingCats.map((c) => `<option value="${esc(c)}" ${c === guessedCat ? "selected" : ""}>${esc(c)}</option>`).join("")}
+              <option value="__new__" ${existingCats.includes(guessedCat) ? "" : "selected"}>+ New category…</option>
+            </select>
+            <input class="inline-input" id="cat-new" name="category" placeholder="New category name" value="${esc(guessedCat)}" style="width:100%;margin-top:8px;${existingCats.includes(guessedCat) ? "display:none" : ""}">
+          </div></div>
+          <button class="btn" type="submit">Add to my store</button>
+          <span id="imp-msg" class="muted" style="margin-left:12px"></span>
+        </form>
+      </div>`;
+    const form = document.getElementById("imp-form");
+    const sel = form.vid;
+    const fill = () => {
+      const cost = Number(sel.selectedOptions[0].dataset.cost);
+      form.price.value = suggest(cost);
+      form.compareAt.value = (Math.ceil(cost * 3.5) - 0.01).toFixed(2);
+    };
+    sel.onchange = fill; fill();
+
+    const catSelect = document.getElementById("cat-select");
+    const catNew = document.getElementById("cat-new");
+    catSelect.onchange = () => {
+      if (catSelect.value === "__new__") { catNew.style.display = "block"; catNew.value = ""; catNew.focus(); }
+      else { catNew.style.display = "none"; catNew.value = catSelect.value; }
+    };
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      if (!catNew.value.trim()) { alert("Please choose or enter a category."); return; }
+      const f = Object.fromEntries(new FormData(form).entries());
+      f.category = catNew.value.trim();
+      const msg = document.getElementById("imp-msg");
+      msg.textContent = "Importing…";
+      try {
+        await post("/admin/api/cj/import", { pid, ...f });
+        msg.textContent = "Added! You can import another variant or check the Products tab.";
+      } catch (err) { msg.textContent = err.message; }
+    };
+  } catch (err) { box.innerHTML = `<p style="color:#BB4D2E">${esc(err.message)}</p>`; }
+}
+
+// ---------------- Orders ----------------
+const STATUS = {
+  pending_payment: ["Awaiting payment", "warn"], payment_error: ["Payment error", "bad"], paid: ["Paid", "warn"],
+  sent_to_cj: ["Sent to CJ", "ok"], cj_error: ["CJ error", "bad"], shipped: ["Shipped", "ok"],
+  delivered: ["Delivered", "ok"], cj_cancelled: ["Cancelled by CJ", "bad"],
+};
 async function renderOrders() {
-  const orders = await (await fetch("/admin/api/orders")).json();
-  const content = document.getElementById("tab-content");
-  if (!orders.length) {
-    content.innerHTML = `<p style="color:#6B6F6B;">No orders yet.</p>`;
-    return;
-  }
-  content.innerHTML = `
-    <table class="admin-table">
-      <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody>
-        ${orders.slice().reverse().map((o) => `
-          <tr>
-            <td>${o.id}</td>
-            <td>${o.customer?.name || "—"}<br><span style="color:#6B6F6B; font-size:12px;">${o.customer?.email || ""}</span></td>
-            <td>$${o.total.toFixed(2)}</td>
-            <td>${o.status}</td>
-            <td>${new Date(o.createdAt).toLocaleString()}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  `;
+  const orders = await api("/admin/api/orders");
+  content().innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn secondary sm" id="sync-btn">Sync CJ status &amp; tracking</button><span id="sync-msg" class="muted"></span></div>
+    ${orders.length ? `<table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>CJ</th><th></th></tr></thead><tbody>
+    ${orders.map((o) => { const [label, cls] = STATUS[o.status] || [o.status, ""]; const a = o.customer?.address || {}; return `
+      <tr>
+        <td>${esc(o.id)}<div class="muted">${new Date(o.createdAt).toLocaleString()}</div></td>
+        <td>${esc(o.customer?.name)}<div class="muted">${esc(o.customer?.email)} · ${esc(a.country)}</div></td>
+        <td>${money(o.total)}</td>
+        <td><span class="badge ${cls}">${esc(label)}</span>${o.error ? `<div class="muted" style="color:#BB4D2E">${esc(o.error)}</div>` : ""}</td>
+        <td>${o.cjOrderId ? esc(o.cjOrderId) : "—"}<div class="muted">${esc(o.cjStatus || "")}${o.cjAmount != null ? " · cost " + money(o.cjAmount) : ""}${o.trackingNumber ? "<br>Track: " + esc(o.trackingNumber) : ""}</div></td>
+        <td>
+          ${["pending_payment","payment_error"].includes(o.status) ? `<button class="btn sm" data-paid="${esc(o.id)}">Mark paid &amp; send to CJ</button>` : ""}
+          ${["cj_error","paid"].includes(o.status) && !o.cjOrderId ? `<button class="btn sm" data-retry="${esc(o.id)}">Retry CJ</button>` : ""}
+          <button class="btn secondary sm" data-view="${esc(o.id)}">Details</button>
+          <pre class="detail" id="d-${esc(o.id)}" style="display:none"></pre>
+        </td>
+      </tr>`; }).join("")}</tbody></table>` : `<p class="muted">No orders yet.</p>`}`;
+  const run = (sel, attr, fn) => content().querySelectorAll(sel).forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    try { await fn(b.dataset[attr]); } catch (e) { alert(e.message); }
+    render();
+  });
+  run("[data-paid]", "paid", (id) => { if (!confirm("Confirm that this customer's payment has arrived? The order will be sent to CJ.")) throw new Error("Cancelled"); return post(`/admin/api/orders/${encodeURIComponent(id)}/mark-paid`); });
+  run("[data-retry]", "retry", (id) => post(`/admin/api/orders/${encodeURIComponent(id)}/retry-cj`));
+  content().querySelectorAll("[data-view]").forEach((b) => b.onclick = () => {
+    const o = orders.find((x) => x.id === b.dataset.view); const pre = document.getElementById("d-" + o.id);
+    const a = o.customer.address;
+    pre.textContent = `${o.customer.name}\n${a.street}${a.street2 ? ", " + a.street2 : ""}\n${a.city}, ${a.state} ${a.zip}\n${a.country} · ${a.phone}\n\n` +
+      o.lineItems.map((i) => `${i.qty} × ${i.name} @ ${money(i.price)}${i.cjVid ? "" : "  (NOT LINKED TO CJ)"}`).join("\n") +
+      `\n\nPayment: ${o.paymentProvider || "—"} ${o.paymentRef || ""}\nShipping method: ${o.logisticName || "—"}`;
+    pre.style.display = pre.style.display === "none" ? "block" : "none";
+  });
+  document.getElementById("sync-btn").onclick = async () => {
+    const m = document.getElementById("sync-msg"); m.textContent = "Syncing…";
+    try { const r = await post("/admin/api/sync"); m.textContent = `Checked ${r.checked}, updated ${r.updated}${r.errors.length ? " — " + r.errors.join("; ") : ""}`; setTimeout(render, 1500); }
+    catch (e) { m.textContent = e.message; }
+  };
+}
+
+// ---------------- Setup ----------------
+async function renderSetup() {
+  const s = await api("/admin/api/status");
+  const row = (ok, label, hint) => `<tr><td>${ok ? '<span class="badge ok">OK</span>' : '<span class="badge bad">Missing</span>'}</td><td>${label}<div class="muted">${hint || ""}</div></td></tr>`;
+  content().innerHTML = `
+    <table class="admin-table"><tbody>
+      ${row(s.cj.configured, "CJ API key (CJ_API_KEY)", s.cj.configured ? "Use “Test CJ connection” below." : "Add it in Render → Environment.")}
+      ${row(s.payment.ready, "Payments: " + esc(s.payment.provider), s.payment.provider === "manual" ? "Manual mode: you confirm each payment in the Orders tab." : "Stripe keys + webhook secret must be set.")}
+      ${row(s.cronToken, "Cron token (CRON_TOKEN)", "Needed for automatic tracking sync (see README).")}
+      ${row(!!s.cj.defaultLogistic, "Fallback CJ shipping method (CJ_DEFAULT_LOGISTIC)", "Recommended, e.g. CJPacket Ordinary. Used if CJ’s freight lookup fails.")}
+    </tbody></table>
+    <p class="muted">CJ mode: ${s.cj.sandbox ? "<strong>SANDBOX (test orders, no real charges)</strong>" : "<strong>LIVE</strong>"} · pays from: ${esc(s.cj.payMode)} · ships from: ${esc(s.cj.fromCountry)}</p>
+    <button class="btn secondary sm" id="test-cj">Test CJ connection</button> <pre class="detail" id="cj-test" style="display:none"></pre>`;
+  document.getElementById("test-cj").onclick = async () => {
+    const pre = document.getElementById("cj-test"); pre.style.display = "block"; pre.textContent = "Testing…";
+    try { const r = await api("/admin/api/status?test=1"); pre.textContent = JSON.stringify(r.cj, null, 2); } catch (e) { pre.textContent = e.message; }
+  };
 }
 
 render();
